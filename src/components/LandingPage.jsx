@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -57,7 +56,6 @@ export default function LandingPage() {
               <Video className="h-8 w-8 text-blue-600" />
               <span className="ml-2 text-xl font-bold text-gray-900">ConsultPro</span>
             </div>
-
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900">
                 Features
@@ -72,7 +70,6 @@ export default function LandingPage() {
                 <Button>Get Started</Button>
               </Link>
             </div>
-
             <div className="md:hidden flex items-center">
               <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600 hover:text-gray-900">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,7 +79,6 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
@@ -138,7 +134,6 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Choose ConsultPro?</h2>
             <p className="text-xl text-gray-600">Everything you need for professional video consultations</p>
           </div>
-
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="text-center hover:shadow-lg transition-shadow">
@@ -181,7 +176,6 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What Our Users Say</h2>
           </div>
-
           <div className="grid md:grid-cols-2 gap-8">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="hover:shadow-lg transition-shadow">

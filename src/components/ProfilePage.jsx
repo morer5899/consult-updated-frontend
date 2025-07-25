@@ -45,12 +45,14 @@ export default function ProfilePage() {
     languages: [],
     avatar: "",
   })
+
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     smsNotifications: false,
     appointmentReminders: true,
     marketingEmails: false,
   })
+
   const [privacy, setPrivacy] = useState({
     profileVisibility: "public",
     showEmail: false,
@@ -67,8 +69,8 @@ export default function ProfilePage() {
   const [billingHistory, setBillingHistory] = useState([])
   const [loadingBilling, setLoadingBilling] = useState(false)
   const [billingError, setBillingError] = useState(null)
-
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
+
   const razorpayKeyId = "rzp_test_YOUR_KEY_ID" // Replace with your actual Razorpay Test Key ID
 
   // Function to load Razorpay script
@@ -76,6 +78,7 @@ export default function ProfilePage() {
     if (razorpayLoaded || document.getElementById("razorpay-checkout-script-profile")) {
       return Promise.resolve(true)
     }
+
     return new Promise((resolve) => {
       const script = document.createElement("script")
       script.id = "razorpay-checkout-script-profile"
@@ -103,6 +106,7 @@ export default function ProfilePage() {
 
       setLoadingProfile(true)
       setProfileError(null)
+
       try {
         const response = await fetch(`${BACKEND_URL}/api/users/${user.id}`, {
           headers: getAuthHeader(),
@@ -125,6 +129,7 @@ export default function ProfilePage() {
           languages: data.languages || [],
           avatar: data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.email}`,
         })
+
         setNotifications(
           data.notifications || {
             emailNotifications: true,
@@ -133,6 +138,7 @@ export default function ProfilePage() {
             marketingEmails: false,
           },
         )
+
         setPrivacy(
           data.privacy || {
             profileVisibility: "public",
@@ -155,12 +161,14 @@ export default function ProfilePage() {
   useEffect(() => {
     setLoadingBilling(true)
     setBillingError(null)
+
     // Simulate API call
     setTimeout(() => {
       setPaymentMethods([
         { id: "pm_1", type: "Visa", last4: "4242", expiry: "12/25" },
         { id: "pm_2", type: "Mastercard", last4: "5555", expiry: "08/24" },
       ])
+
       setBillingHistory([
         {
           id: "bill_1",
@@ -172,6 +180,7 @@ export default function ProfilePage() {
         { id: "bill_2", date: "2024-05-20", description: "Consultation with John Doe", amount: 75.0, status: "Paid" },
         { id: "bill_3", date: "2024-04-10", description: "Monthly Subscription", amount: 29.99, status: "Paid" },
       ])
+
       setLoadingBilling(false)
     }, 1000)
   }, [])
@@ -180,6 +189,7 @@ export default function ProfilePage() {
     setSavingProfile(true)
     setProfileError(null)
     setSaveSuccess(false)
+
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/${user.id}`, {
         method: "PUT",
@@ -197,10 +207,12 @@ export default function ProfilePage() {
           phone: profile.phone,
         }),
       })
+
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.message || "Failed to update profile")
       }
+
       setSaveSuccess(true)
     } catch (err) {
       console.error("Error updating profile:", err)
@@ -215,6 +227,7 @@ export default function ProfilePage() {
     setSavingProfile(true)
     setProfileError(null)
     setSaveSuccess(false)
+
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/${user.id}`, {
         method: "PUT",
@@ -224,10 +237,12 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ notifications }),
       })
+
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.message || "Failed to update notifications")
       }
+
       setSaveSuccess(true)
     } catch (err) {
       console.error("Error updating notifications:", err)
@@ -242,6 +257,7 @@ export default function ProfilePage() {
     setSavingProfile(true)
     setProfileError(null)
     setSaveSuccess(false)
+
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/${user.id}`, {
         method: "PUT",
@@ -251,10 +267,12 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ privacy }),
       })
+
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.message || "Failed to update privacy settings")
       }
+
       setSaveSuccess(true)
     } catch (err) {
       console.error("Error updating privacy:", err)
@@ -281,14 +299,17 @@ export default function ProfilePage() {
         },
         body: formData,
       })
+
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.message || "Failed to upload avatar")
       }
+
       setProfile((prevProfile) => ({
         ...prevProfile,
         avatar: data.avatar,
       }))
+
       setSaveSuccess(true)
     } catch (err) {
       console.error("Error uploading avatar:", err)
@@ -362,6 +383,7 @@ export default function ProfilePage() {
       setBillingError(response.error.description || "Failed to add payment method. Please try again.")
       setLoadingBilling(false)
     })
+
     rzp.open()
   }
 
@@ -369,6 +391,7 @@ export default function ProfilePage() {
     // Simulate API call to delete payment method
     setLoadingBilling(true)
     setBillingError(null)
+
     setTimeout(() => {
       setPaymentMethods((prev) => prev.filter((method) => method.id !== id))
       setLoadingBilling(false)
@@ -468,6 +491,7 @@ export default function ProfilePage() {
                       Change Photo
                     </Button>
                   </div>
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Full Name</Label>
@@ -488,6 +512,7 @@ export default function ProfilePage() {
                       />
                     </div>
                   </div>
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="phone">Phone Number</Label>
@@ -507,6 +532,7 @@ export default function ProfilePage() {
                       />
                     </div>
                   </div>
+
                   <div>
                     <Label htmlFor="bio">Bio</Label>
                     <Textarea
@@ -517,6 +543,7 @@ export default function ProfilePage() {
                       rows={4}
                     />
                   </div>
+
                   {user?.role === "consultant" && (
                     <div>
                       <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
@@ -528,10 +555,12 @@ export default function ProfilePage() {
                       />
                     </div>
                   )}
+
                   <Button onClick={handleProfileUpdate} disabled={savingProfile}>
                     {savingProfile ? "Saving..." : "Save Changes"}
                     <Save className="h-4 w-4 ml-2" />
                   </Button>
+
                   {saveSuccess && <p className="text-green-600 text-sm">Profile saved successfully!</p>}
                   {profileError && <p className="text-red-600 text-sm">{profileError}</p>}
                 </CardContent>
@@ -595,6 +624,7 @@ export default function ProfilePage() {
                     onCheckedChange={(checked) => setNotifications({ ...notifications, emailNotifications: checked })}
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="sms-notifications">SMS Notifications</Label>
@@ -606,6 +636,7 @@ export default function ProfilePage() {
                     onCheckedChange={(checked) => setNotifications({ ...notifications, smsNotifications: checked })}
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="appointment-reminders">Appointment Reminders</Label>
@@ -617,6 +648,7 @@ export default function ProfilePage() {
                     onCheckedChange={(checked) => setNotifications({ ...notifications, appointmentReminders: checked })}
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="marketing-emails">Marketing Emails</Label>
@@ -628,10 +660,12 @@ export default function ProfilePage() {
                     onCheckedChange={(checked) => setNotifications({ ...notifications, marketingEmails: checked })}
                   />
                 </div>
+
                 <Button onClick={handleNotificationUpdate} disabled={savingProfile}>
                   {savingProfile ? "Saving..." : "Save Preferences"}
                   <Save className="h-4 w-4 mr-2" />
                 </Button>
+
                 {saveSuccess && <p className="text-green-600 text-sm">Preferences saved successfully!</p>}
                 {profileError && <p className="text-red-600 text-sm">{profileError}</p>}
               </CardContent>
@@ -668,6 +702,7 @@ export default function ProfilePage() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="show-email">Show Email</Label>
@@ -679,6 +714,7 @@ export default function ProfilePage() {
                     onCheckedChange={(checked) => setPrivacy({ ...privacy, showEmail: checked })}
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="show-phone">Show Phone</Label>
@@ -690,10 +726,12 @@ export default function ProfilePage() {
                     onCheckedChange={(checked) => setPrivacy({ ...privacy, showPhone: checked })}
                   />
                 </div>
+
                 <Button onClick={handlePrivacyUpdate} disabled={savingProfile}>
                   {savingProfile ? "Saving..." : "Save Settings"}
                   <Save className="h-4 w-4 mr-2" />
                 </Button>
+
                 {saveSuccess && <p className="text-green-600 text-sm">Settings saved successfully!</p>}
                 {profileError && <p className="text-red-600 text-sm">{profileError}</p>}
               </CardContent>
@@ -751,13 +789,16 @@ export default function ProfilePage() {
                           ))}
                         </div>
                       )}
+
                       <Button onClick={handleAddPaymentMethod} disabled={loadingBilling || !razorpayLoaded}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Payment Method
                       </Button>
+
                       {!razorpayLoaded && (
                         <p className="text-gray-500 text-center text-sm">Loading Razorpay script...</p>
                       )}
+
                       {saveSuccess && <p className="text-green-600 text-sm">Action successful!</p>}
                     </div>
 

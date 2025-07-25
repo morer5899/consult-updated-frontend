@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Video, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext.jsx"
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google"
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -17,12 +18,14 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     role: "",
+    specialization: "",
+    experience: "",
+    hourlyRate: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-
   const { register } = useAuth()
   const navigate = useNavigate()
 
@@ -45,6 +48,7 @@ export default function Register() {
     setLoading(true)
     setError("")
 
+    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
       setLoading(false)
@@ -52,7 +56,7 @@ export default function Register() {
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
+      setError("Password must be at least 6 characters long")
       setLoading(false)
       return
     }
@@ -64,14 +68,63 @@ export default function Register() {
     }
 
     try {
-      await register(formData.name, formData.email, formData.password, formData.role)
+      await register(formData)
       navigate("/dashboard")
     } catch (err) {
-      setError("Registration failed. Please try again.")
+      setError(err.message || "Registration failed")
     } finally {
       setLoading(false)
     }
   }
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setLoading(true)
+      setError("")
+
+      console.log("Google auth success", credentialResponse)
+
+      // Send the credential to your backend for verification
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"}/api/auth/google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Google authentication failed")
+      }
+
+      // Ensure the user object has an id field
+      const userWithId = {
+        ...data.user,
+        id: data.user._id || data.user.id,
+      }
+
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(userWithId))
+
+      // Manually trigger a page reload to update the auth context
+      window.location.href = "/dashboard"
+    } catch (err) {
+      console.error("Google login error:", err)
+      setError(err.message || "Google login failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    console.log("Google login failed")
+    setError("Google login failed. Please try again.")
+  }
+
+  // Check if Google Client ID is configured
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -92,7 +145,7 @@ export default function Register() {
         <Card>
           <CardHeader>
             <CardTitle>Get started</CardTitle>
-            <CardDescription>Create your account to start consulting</CardDescription>
+            <CardDescription>Create your account to start using ConsultPro</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -101,7 +154,7 @@ export default function Register() {
               )}
 
               <div>
-                <Label htmlFor="name">Full name</Label>
+                <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
                   name="name"
@@ -131,17 +184,65 @@ export default function Register() {
               </div>
 
               <div>
-                <Label htmlFor="role">I want to</Label>
+                <Label htmlFor="role">I am a</Label>
                 <Select onValueChange={handleRoleChange} required>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="client">Book consultations (Client)</SelectItem>
-                    <SelectItem value="consultant">Provide consultations (Consultant)</SelectItem>
+                    <SelectItem value="client">Client (Looking for consultation)</SelectItem>
+                    <SelectItem value="consultant">Consultant (Providing services)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {formData.role === "consultant" && (
+                <>
+                  <div>
+                    <Label htmlFor="specialization">Specialization</Label>
+                    <Input
+                      id="specialization"
+                      name="specialization"
+                      type="text"
+                      required
+                      value={formData.specialization}
+                      onChange={handleChange}
+                      className="mt-1"
+                      placeholder="e.g., Business Strategy, Legal Advice, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="experience">Years of Experience</Label>
+                    <Input
+                      id="experience"
+                      name="experience"
+                      type="number"
+                      required
+                      value={formData.experience}
+                      onChange={handleChange}
+                      className="mt-1"
+                      placeholder="Enter years of experience"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="hourlyRate">Hourly Rate (₹)</Label>
+                    <Input
+                      id="hourlyRate"
+                      name="hourlyRate"
+                      type="number"
+                      required
+                      value={formData.hourlyRate}
+                      onChange={handleChange}
+                      className="mt-1"
+                      placeholder="Enter your hourly rate"
+                      min="0"
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <Label htmlFor="password">Password</Label>
@@ -154,7 +255,7 @@ export default function Register() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Create a password"
+                    placeholder="Enter your password"
                   />
                   <button
                     type="button"
@@ -171,7 +272,7 @@ export default function Register() {
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword">Confirm password</Label>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <div className="relative mt-1">
                   <Input
                     id="confirmPassword"
@@ -199,21 +300,21 @@ export default function Register() {
 
               <div className="flex items-center">
                 <input
-                  id="agree-terms"
-                  name="agree-terms"
+                  id="terms"
+                  name="terms"
                   type="checkbox"
                   required
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <Label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
+                <Label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                   I agree to the{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-500">
+                  <Link to="/terms" className="text-blue-600 hover:text-blue-500">
                     Terms of Service
-                  </a>{" "}
+                  </Link>{" "}
                   and{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-500">
+                  <Link to="/privacy" className="text-blue-600 hover:text-blue-500">
                     Privacy Policy
-                  </a>
+                  </Link>
                 </Label>
               </div>
 
@@ -221,6 +322,52 @@ export default function Register() {
                 {loading ? "Creating account..." : "Create account"}
               </Button>
             </form>
+
+            {googleClientId && (
+              <GoogleOAuthProvider clientId={googleClientId}>
+                <div className="mt-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      useOneTap={false}
+                      shape="rectangular"
+                      size="large"
+                      width="100%"
+                      text="signup_with"
+                      theme="outline"
+                    />
+                  </div>
+                </div>
+              </GoogleOAuthProvider>
+            )}
+
+            {!googleClientId && (
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Google OAuth not configured</span>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    To enable Google Sign-In, please configure VITE_GOOGLE_CLIENT_ID in your environment variables.
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

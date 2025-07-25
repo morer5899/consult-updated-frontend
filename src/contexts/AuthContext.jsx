@@ -3,8 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 
-// Ensure VITE_BACKEND_URL defaults to http://localhost:5000
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")
+// Ensure VITE_BACKEND_URL defaults to http://localhost:8000
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:8000").replace(/\/+$/, "")
 
 const AuthContext = createContext()
 
@@ -21,7 +21,6 @@ export function AuthProvider({ children }) {
     console.log("AuthContext useEffect: Initializing...")
     const storedUser = localStorage.getItem("user")
     const storedToken = localStorage.getItem("token")
-
     console.log("AuthContext useEffect: Raw storedUser from localStorage:", storedUser)
     console.log("AuthContext useEffect: Raw storedToken from localStorage:", storedToken)
 
@@ -33,10 +32,16 @@ export function AuthProvider({ children }) {
     if (tokenFromUrl && userFromUrl) {
       try {
         const decodedUser = JSON.parse(decodeURIComponent(userFromUrl))
+        // Ensure the user object has an id field
+        const userWithId = {
+          ...decodedUser,
+          id: decodedUser._id || decodedUser.id,
+        }
+
         localStorage.setItem("token", tokenFromUrl)
-        localStorage.setItem("user", JSON.stringify(decodedUser))
-        setUser(decodedUser)
-        console.log("AuthContext: Processed Google OAuth redirect. User set:", decodedUser)
+        localStorage.setItem("user", JSON.stringify(userWithId))
+        setUser(userWithId)
+        console.log("AuthContext: Processed Google OAuth redirect. User set:", userWithId)
 
         // Clear URL parameters to prevent re-processing on refresh
         urlParams.delete("token")
@@ -53,8 +58,14 @@ export function AuthProvider({ children }) {
     } else if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
-        console.log("AuthContext useEffect: Found stored user and token in localStorage. User set:", parsedUser)
+        // Ensure the user object has an id field
+        const userWithId = {
+          ...parsedUser,
+          id: parsedUser._id || parsedUser.id,
+        }
+
+        setUser(userWithId)
+        console.log("AuthContext useEffect: Found stored user and token in localStorage. User set:", userWithId)
       } catch (parseError) {
         console.error("AuthContext useEffect: Error parsing stored user from localStorage:", parseError)
         // Clear potentially corrupted data
@@ -88,15 +99,23 @@ export function AuthProvider({ children }) {
       })
 
       const data = await response.json()
+
       if (!response.ok) {
         throw new Error(data.message || "Login failed")
       }
 
+      // Ensure the user object has an id field
+      const userWithId = {
+        ...data.user,
+        id: data.user._id || data.user.id, // Handle both _id and id
+      }
+
       localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      setUser(data.user)
-      console.log("AuthContext: Manual login successful. User data saved to localStorage.", data.user)
-      return data.user
+      localStorage.setItem("user", JSON.stringify(userWithId))
+      setUser(userWithId)
+      console.log("AuthContext: Manual login successful. User data saved to localStorage.", userWithId)
+
+      return userWithId
     } catch (error) {
       console.error("AuthContext: Login error:", error)
       throw error
@@ -114,15 +133,23 @@ export function AuthProvider({ children }) {
       })
 
       const data = await response.json()
+
       if (!response.ok) {
         throw new Error(data.message || "Registration failed")
       }
 
+      // Ensure the user object has an id field
+      const userWithId = {
+        ...data.user,
+        id: data.user._id || data.user.id, // Handle both _id and id
+      }
+
       localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      setUser(data.user)
-      console.log("AuthContext: Registration successful. User data saved to localStorage.", data.user)
-      return data.user
+      localStorage.setItem("user", JSON.stringify(userWithId))
+      setUser(userWithId)
+      console.log("AuthContext: Registration successful. User data saved to localStorage.", userWithId)
+
+      return userWithId
     } catch (error) {
       console.error("AuthContext: Registration error:", error)
       throw error

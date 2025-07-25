@@ -15,7 +15,6 @@ const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"
 export default function SetAvailabilityPage() {
   const navigate = useNavigate()
   const { user, getAuthHeader } = useAuth()
-
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [availability, setAvailability] = useState({}) // Stores availability for all fetched dates
   const [newSlotStart, setNewSlotStart] = useState("")
@@ -258,6 +257,7 @@ export default function SetAvailabilityPage() {
                     </>
                   )}
                 </Button>
+
                 {saveStatus === "success" && <p className="text-green-600 text-sm text-center">Availability saved!</p>}
                 {saveStatus === "error" && (
                   <p className="text-red-600 text-sm text-center">Failed to save availability.</p>

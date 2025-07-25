@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Video, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext.jsx"
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -27,22 +28,63 @@ export default function Login() {
       await login(email, password)
       navigate("/dashboard")
     } catch (err) {
-      setError("Invalid email or password")
+      setError(err.message || "Invalid email or password")
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGoogleLogin = () => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"
-    const cleanUrl = backendUrl.replace(/\/+$/, "") // Remove trailing slashes
-    const googleAuthUrl = `${cleanUrl}/api/auth/google`
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setLoading(true)
+      setError("")
 
-    console.log("Backend URL:", backendUrl)
-    console.log("Clean URL:", cleanUrl)
-    console.log("Google Auth URL:", googleAuthUrl)
+      console.log("Google auth success", credentialResponse)
 
-    window.location.href = googleAuthUrl
+      // Send the credential to your backend for verification
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"}/api/auth/google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Google authentication failed")
+      }
+
+      // Ensure the user object has an id field
+      const userWithId = {
+        ...data.user,
+        id: data.user._id || data.user.id,
+      }
+
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(userWithId))
+
+      // Manually trigger a page reload to update the auth context
+      window.location.href = "/dashboard"
+    } catch (err) {
+      console.error("Google login error:", err)
+      setError(err.message || "Google login failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    console.log("Google login failed")
+    setError("Google login failed. Please try again.")
+  }
+
+  // Check if Google Client ID is configured
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
+  if (!googleClientId) {
+    console.warn("Google Client ID not configured. Google OAuth will be disabled.")
   }
 
   return (
@@ -60,6 +102,7 @@ export default function Login() {
             </Link>
           </p>
         </div>
+
         <Card>
           <CardHeader>
             <CardTitle>Welcome back</CardTitle>
@@ -70,6 +113,7 @@ export default function Login() {
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">{error}</div>
               )}
+
               <div>
                 <Label htmlFor="email">Email address</Label>
                 <Input
@@ -84,6 +128,7 @@ export default function Login() {
                   placeholder="Enter your email"
                 />
               </div>
+
               <div>
                 <Label htmlFor="password">Password</Label>
                 <div className="relative mt-1">
@@ -110,6 +155,7 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
@@ -122,36 +168,65 @@ export default function Login() {
                     Remember me
                   </Label>
                 </div>
+
                 <div className="text-sm">
-                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                  <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
               </div>
+
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
+
+            {googleClientId && (
+              <GoogleOAuthProvider clientId={googleClientId}>
+                <div className="mt-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      useOneTap={false}
+                      shape="rectangular"
+                      size="large"
+                      width="100%"
+                      text="signin_with"
+                      theme="outline"
+                    />
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                </div>
-              </div>
+              </GoogleOAuthProvider>
+            )}
+
+            {!googleClientId && (
               <div className="mt-6">
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center justify-center space-x-2 bg-transparent"
-                  onClick={handleGoogleLogin}
-                >
-                  <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="h-5 w-5" />
-                  <span>Sign in with Google</span>
-                </Button>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Google OAuth not configured</span>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    To enable Google Sign-In, please configure VITE_GOOGLE_CLIENT_ID in your environment variables.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
+
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -161,6 +236,7 @@ export default function Login() {
                   <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
                 </div>
               </div>
+
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
